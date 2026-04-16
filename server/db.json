@@ -1,0 +1,95 @@
+{
+  "users": [
+    {
+      "id": 1775733627517,
+      "email": "yernur111@gmail.com",
+      "password": "$2b$10$.vMX/NeNF7s3MA0spTEEQeJLAO4RrZ.naNcTykUSms/fgplwT5gmq",
+      "name": "Yernur",
+      "role": "user"
+    },
+    {
+      "id": 1775795514604,
+      "email": "admin@test.com",
+      "password": "$2b$10$AWTlGWUfcH8h4VqXswnitesdxH1ccSL8spMwU7BKL8NIigCbksT3e",
+      "name": "Admin Yernur",
+      "role": "admin"
+    },
+    {
+      "id": 1775799166163,
+      "email": "azaa@gmail.com",
+      "password": "$2b$10$xmoPWqDXELD1NAVHi62fne80W.f5cBgwok93BSn3C77mFpZ0u2gv.",
+      "name": "azaa",
+      "role": "user"
+    }
+  ],
+  "genres": [
+    {
+      "id": 1,
+      "name": "Action"
+    },
+    {
+      "id": 2,
+      "name": "Comedy"
+    },
+    {
+      "id": 3,
+      "name": "Drama"
+    },
+    {
+      "id": 4,
+      "name": "Horror"
+    },
+    {
+      "id": 5,
+      "name": "Sci-Fi"
+    }
+  ],
+  "movies": [
+    {
+      "id": 1,
+      "title": "Inception",
+      "year": 2010,
+      "rating": 8.8,
+      "posterUrl": "https://i.ebayimg.com/images/g/qeAAAOSwlMNnO6gM/s-l1600.webp",
+      "description": "A thief who steals corporate secrets through dream-sharing technology.",
+      "genreId": 5
+    },
+    {
+      "title": "Fury",
+      "year": 2014,
+      "rating": 9,
+      "posterUrl": "https://i.etsystatic.com/12729518/r/il/f58742/1992785418/il_fullxfull.1992785418_4tlw.jpg",
+      "description": "",
+      "genreId": 4,
+      "id": 3
+    },
+    {
+      "title": "Avengers: Infinity war",
+      "year": 2018,
+      "rating": 8,
+      "posterUrl": "https://m.media-amazon.com/images/I/A1kio+K2RuL._AC_UF894,1000_QL80_.jpg",
+      "description": "",
+      "genreId": 1,
+      "id": 4
+    },
+    {
+      "title": "Frankenstein",
+      "year": 2025,
+      "rating": 7,
+      "posterUrl": "https://posterspy.com/wp-content/uploads/2025/11/frankenstein.jpg",
+      "description": "",
+      "genreId": 5,
+      "id": 5
+    },
+    {
+      "title": "1+1",
+      "year": 2018,
+      "rating": 10,
+      "posterUrl": "https://static.tildacdn.com/tild6361-3861-4237-b835-373964636233/1_1-1.jpg",
+      "description": "asd asdasda",
+      "genreId": 2,
+      "id": 6
+    }
+  ],
+  "reviews": []
+}
