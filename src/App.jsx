@@ -19,7 +19,6 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
-    document.body.className = theme;
   }, [theme]);
 
   useEffect(() => {
@@ -41,10 +40,41 @@ export default function App() {
   }, [selectedGenre, movies]);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.reload();
+  };
+
+  const canEditDelete = (movie) => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+    return movie.createdBy === user.id;
+  };
+
+  const handleDeleteMovie = async (movieId) => {
+    if (!window.confirm("Delete this movie?")) return;
+    const token = localStorage.getItem('token');
+    
+    const reviewsRes = await fetch(`http://localhost:3001/reviews?movieId=${movieId}`);
+    const reviews = await reviewsRes.json();
+    
+    for (const review of reviews) {
+      await fetch(`http://localhost:3001/reviews/${review.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+    
+    await fetch(`http://localhost:3001/movies/${movieId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const updated = movies.filter(m => m.id !== movieId);
+    dispatch(setMovies(updated));
+    setFilteredMovies(updated);
   };
 
   return (
@@ -87,7 +117,15 @@ export default function App() {
                       <div className="movie-info">
                         <h3 className="movie-title">{movie.title}</h3>
                         <p className="movie-year">{movie.year}</p>
-                        <Link to={`/movies/${movie.id}`} className="btn btn-primary">View</Link>
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                          <Link to={`/movies/${movie.id}`} className="btn btn-primary">View</Link>
+                          {canEditDelete(movie) && (
+                            <>
+                              <Link to={`/movies/edit/${movie.id}`} className="btn btn-warning">Edit</Link>
+                              <button onClick={() => handleDeleteMovie(movie.id)} className="btn btn-danger">Delete</button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

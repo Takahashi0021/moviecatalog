@@ -97,6 +97,28 @@ export default function MovieDetail() {
     }
   };
 
+  const canDeleteMovie = () => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+    return movie?.createdBy === user.id;
+  };
+
+  const handleDeleteMovie = async () => {
+    if (!window.confirm("Delete this movie? All reviews will be deleted too.")) return;
+    const token = getToken();
+    for (const review of reviews) {
+      await fetch(`http://localhost:3001/reviews/${review.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+    await fetch(`http://localhost:3001/movies/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    navigate('/');
+  };
+
   if (!movie) return <div className="loading">Loading...</div>;
 
   return (
@@ -112,14 +134,10 @@ export default function MovieDetail() {
             ⭐ Average Rating: <strong>{averageRating}</strong>/10 ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
           </div>
           <p>{movie.description || "No description"}</p>
-          {user && (
+          {canDeleteMovie() && (
             <div className="movie-actions">
               <button onClick={() => navigate(`/movies/edit/${movie.id}`)} className="btn btn-warning">Edit</button>
-              <button onClick={() => {
-                if (window.confirm("Delete movie?")) {
-                  fetch(`http://localhost:3001/movies/${id}`, { method: 'DELETE' }).then(() => navigate('/'));
-                }
-              }} className="btn btn-danger">Delete</button>
+              <button onClick={handleDeleteMovie} className="btn btn-danger">Delete</button>
             </div>
           )}
         </div>
