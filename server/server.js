@@ -1,3 +1,4 @@
+// server/server.js
 const jsonServer = require('json-server');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -11,6 +12,7 @@ server.use(jsonServer.bodyParser);
 
 const SECRET_KEY = 'movie-secret-key-2024';
 
+// Регистрация
 server.post('/register', async (req, res) => {
   const { email, password, name } = req.body;
   const db = router.db;
@@ -35,6 +37,7 @@ server.post('/register', async (req, res) => {
   res.json({ token, user: { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role } });
 });
 
+// Логин
 server.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const db = router.db;
@@ -49,22 +52,30 @@ server.post('/login', async (req, res) => {
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
 });
 
+// Middleware для проверки токена
 const auth = (req, res, next) => {
+  // GET запросы пропускаем
   if (req.method === 'GET') {
     return next();
   }
   
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token' });
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
   
   jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid' });
+    if (err) {
+      return res.status(403).json({ error: 'Invalid token' });
+    }
     req.user = user;
     next();
   });
 };
 
+// Применяем auth только к защищенным маршрутам
 server.use('/movies', auth);
 server.use('/reviews', auth);
 server.use('/users', auth);

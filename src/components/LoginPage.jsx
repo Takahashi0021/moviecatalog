@@ -1,42 +1,44 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useNavigate, Link } from "react-router-dom";
+import { useDispatch } from 'react-redux';
+import { setUser } from '../redux/store';
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleLogin = async () => {
-    const success = await login(email, password);
-    if (success) {
-      navigate("/");
-    } else {
-      setError("Invalid credentials");
+    try {
+      const res = await fetch("http://localhost:3001/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        dispatch(setUser(data.user));
+        navigate("/");
+      } else {
+        setError("Invalid credentials");
+      }
+    } catch {
+      setError("Connection error");
     }
   };
 
   return (
-    <div style={{ maxWidth: "300px", margin: "auto" }}>
+    <div className="form-container">
       <h2>Login</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ display: "block", margin: "10px 0", width: "100%" }}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        style={{ display: "block", margin: "10px 0", width: "100%" }}
-      />
-      <button onClick={handleLogin}>Login</button>
+      {error && <div className="error-message">{error}</div>}
+      <input type="email" placeholder="Email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} />
+      <input type="password" placeholder="Password" className="form-control" value={password} onChange={e => setPassword(e.target.value)} />
+      <button onClick={handleLogin} className="btn btn-primary">Login</button>
+      <p className="form-footer">No account? <Link to="/register">Register</Link></p>
     </div>
   );
 }

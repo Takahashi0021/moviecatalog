@@ -20,6 +20,13 @@
       "password": "$2b$10$xmoPWqDXELD1NAVHi62fne80W.f5cBgwok93BSn3C77mFpZ0u2gv.",
       "name": "azaa",
       "role": "user"
+    },
+    {
+      "id": 1776955936091,
+      "email": "daulet111@gmail.com",
+      "password": "$2b$10$rwJhPqkl9mVqEm49IEtEIeQhZxadd17hMmjOJ2978Cr3xy1SM3y5a",
+      "name": "Daulet",
+      "role": "user"
     }
   ],
   "genres": [
@@ -91,5 +98,15 @@
       "id": 6
     }
   ],
-  "reviews": []
+  "reviews": [
+    {
+      "movieId": 1,
+      "userId": 1775733627517,
+      "userName": "Yernur",
+      "comment": "крут",
+      "rating": 10,
+      "createdAt": "2026-04-23T15:11:25.043Z",
+      "id": 1
+    }
+  ]
 }

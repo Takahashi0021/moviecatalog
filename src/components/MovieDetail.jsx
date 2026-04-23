@@ -1,108 +1,157 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import api from "../api/client";
-import { useAuth } from "../context/AuthContext";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 export default function MovieDetail() {
   const { id } = useParams();
   const [movie, setMovie] = useState(null);
-  const [genre, setGenre] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [comment, setComment] = useState("");
   const [rating, setRating] = useState(5);
-  const { user } = useAuth();
+  const [averageRating, setAverageRating] = useState(0);
+  const [genre, setGenre] = useState(null);
+  const user = useSelector(state => state.auth.user);
   const navigate = useNavigate();
 
+  const getToken = () => localStorage.getItem("token");
+
   useEffect(() => {
-    api.getMovie(id).then(async (data) => {
-      setMovie(data);
-      if (data.genreId) {
-        const g = await api.getGenre(data.genreId);
-        setGenre(g);
-      }
-    });
-    api.getReviews(id).then(setReviews);
+    loadMovie();
+    loadReviews();
   }, [id]);
 
-  const handleAddReview = async () => {
-    if (!comment) return;
-    const newReview = await api.createReview({
-      movieId: parseInt(id),
-      userId: user.id,
-      comment,
-      rating,
-      createdAt: new Date().toISOString()
-    });
-    setReviews([...reviews, newReview]);
-    setComment("");
-    setRating(5);
-  };
-
-  const handleDeleteReview = async (reviewId) => {
-    await api.deleteReview(reviewId);
-    setReviews(reviews.filter(r => r.id !== reviewId));
-  };
-
-  const handleDeleteMovie = async () => {
-    if (confirm("Delete this movie?")) {
-      await api.deleteMovie(id);
-      navigate("/");
+  const loadMovie = async () => {
+    const res = await fetch(`http://localhost:3001/movies/${id}`);
+    const data = await res.json();
+    setMovie(data);
+    if (data.genreId) {
+      const genreRes = await fetch(`http://localhost:3001/genres/${data.genreId}`);
+      setGenre(await genreRes.json());
     }
   };
 
-  if (!movie) return <div>Loading...</div>;
+  const loadReviews = async () => {
+    const res = await fetch(`http://localhost:3001/reviews?movieId=${id}`);
+    const data = await res.json();
+    setReviews(data);
+    if (data.length > 0) {
+      const sum = data.reduce((acc, r) => acc + r.rating, 0);
+      setAverageRating((sum / data.length).toFixed(1));
+    } else {
+      setAverageRating(0);
+    }
+  };
+
+  const handleAddReview = async () => {
+    if (!comment.trim()) return alert("Write a comment");
+    if (!user) return alert("Login first");
+
+    const token = getToken();
+    const newReview = {
+      movieId: parseInt(id),
+      userId: user.id,
+      userName: user.name,
+      comment, rating,
+      createdAt: new Date().toISOString()
+    };
+
+    const res = await fetch('http://localhost:3001/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(newReview)
+    });
+
+    if (res.ok) {
+      const saved = await res.json();
+      const updated = [...reviews, saved];
+      setReviews(updated);
+      setComment("");
+      setRating(5);
+      const sum = updated.reduce((acc, r) => acc + r.rating, 0);
+      setAverageRating((sum / updated.length).toFixed(1));
+    } else {
+      alert("Error adding review");
+    }
+  };
+
+  const handleDeleteReview = async (reviewId, reviewUserId) => {
+    if (!user) return;
+    if (user.role !== "admin" && user.id !== reviewUserId) {
+      alert("You can only delete your own reviews");
+      return;
+    }
+    if (!window.confirm("Delete this review?")) return;
+
+    const token = getToken();
+    await fetch(`http://localhost:3001/reviews/${reviewId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const updated = reviews.filter(r => r.id !== reviewId);
+    setReviews(updated);
+    if (updated.length > 0) {
+      const sum = updated.reduce((acc, r) => acc + r.rating, 0);
+      setAverageRating((sum / updated.length).toFixed(1));
+    } else {
+      setAverageRating(0);
+    }
+  };
+
+  if (!movie) return <div className="loading">Loading...</div>;
 
   return (
-    <div>
-      <div style={{ display: "flex", gap: "20px" }}>
-        <img src={movie.posterUrl} alt={movie.title} style={{ width: "300px", borderRadius: "10px" }} />
-        <div>
+    <div className="movie-detail">
+      <button onClick={() => navigate(-1)} className="btn btn-secondary">← Back</button>
+      <div className="movie-detail-container">
+        <img src={movie.posterUrl || "https://via.placeholder.com/400x600?text=No+Poster"} alt={movie.title} className="movie-detail-poster" />
+        <div className="movie-detail-info">
           <h1>{movie.title}</h1>
-          <p>Year: {movie.year}</p>
-          <p>Genre: {genre?.name}</p>
-          <p>Rating: ⭐ {movie.rating}/10</p>
-          <p>{movie.description}</p>
+          <p>📅 Year: {movie.year}</p>
+          <p>🎭 Genre: {genre?.name || "Unknown"}</p>
+          <div className="average-rating">
+            ⭐ Average Rating: <strong>{averageRating}</strong>/10 ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
+          </div>
+          <p>{movie.description || "No description"}</p>
           {user && (
-            <>
-              <button onClick={() => navigate(`/movies/edit/${movie.id}`)}>Edit</button>
-              <button onClick={handleDeleteMovie} style={{ marginLeft: "10px" }}>Delete Movie</button>
-            </>
+            <div className="movie-actions">
+              <button onClick={() => navigate(`/movies/edit/${movie.id}`)} className="btn btn-warning">Edit</button>
+              <button onClick={() => {
+                if (window.confirm("Delete movie?")) {
+                  fetch(`http://localhost:3001/movies/${id}`, { method: 'DELETE' }).then(() => navigate('/'));
+                }
+              }} className="btn btn-danger">Delete</button>
+            </div>
           )}
         </div>
       </div>
 
-      <div style={{ marginTop: "40px" }}>
-        <h3>Reviews</h3>
-        {user && (
-          <div style={{ margin: "20px 0" }}>
-            <input
-              type="number"
-              min="1"
-              max="10"
-              value={rating}
-              onChange={(e) => setRating(parseInt(e.target.value))}
-              style={{ marginRight: "10px" }}
-            />
-            <input
-              type="text"
-              placeholder="Your review"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              style={{ width: "300px", marginRight: "10px" }}
-            />
-            <button onClick={handleAddReview}>Add Review</button>
+      <div className="reviews-section">
+        <h3>💬 Reviews ({reviews.length})</h3>
+        {user ? (
+          <div className="review-form">
+            <input type="number" min="1" max="10" value={rating} onChange={e => setRating(parseInt(e.target.value))} className="form-control" style={{ width: "100px", marginBottom: "10px" }} />
+            <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="Your review..." className="form-control" rows="2" />
+            <button onClick={handleAddReview} className="btn btn-primary" style={{ marginTop: "10px" }}>Submit</button>
           </div>
+        ) : (
+          <div className="login-prompt">Please <Link to="/login">login</Link> to review</div>
         )}
-        {reviews.map(r => (
-          <div key={r.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px 0", borderRadius: "5px" }}>
-            <p>⭐ {r.rating}/10</p>
-            <p>{r.comment}</p>
-            <small>User {r.userId} - {new Date(r.createdAt).toLocaleDateString()}</small>
-            {user?.role === "admin" && (
-              <button onClick={() => handleDeleteReview(r.id)} style={{ marginLeft: "10px" }}>Delete</button>
-            )}
-          </div>
-        ))}
+        {reviews.length === 0 ? (
+          <p className="no-reviews">No reviews yet</p>
+        ) : (
+          reviews.map(r => (
+            <div key={r.id} className="review-card">
+              <div className="review-header">
+                <strong>{r.userName}</strong> <span className="review-rating">⭐ {r.rating}/10</span>
+                <small>{new Date(r.createdAt).toLocaleDateString()}</small>
+              </div>
+              <p>{r.comment}</p>
+              {(user?.role === "admin" || user?.id === r.userId) && (
+                <button onClick={() => handleDeleteReview(r.id, r.userId)} className="btn btn-danger btn-sm">Delete</button>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
